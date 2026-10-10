@@ -1,0 +1,15 @@
+{% extends "feed/base.html" %}
+
+{% block content %}
+<div class="card">
+    <h2>Create an Account</h2>
+    <form method="post">
+        {% csrf_token %}
+        {{ form.as_p }}
+        <button type="submit" class="btn">Sign Up</button>
+    </form>
+    <p style="margin-top: 15px;">
+        Already have an account? <a href="{% url 'login' %}">Log in here</a>
+    </p>
+</div>
+{% endblock %}

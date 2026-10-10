@@ -1,0 +1,28 @@
+{% extends "feed/base.html" %}
+
+{% block content %}
+<div class="card">
+    <h2>Log In</h2>
+    
+    {% if form.errors %}
+        <p style="color: red;">Your username and password didn't match. Please try again.</p>
+    {% endif %}
+
+    <form method="post" action="{% url 'login' %}">
+        {% csrf_token %}
+        <p>
+            <label for="id_username">Username:</label><br>
+            {{ form.username }}
+        </p>
+        <p>
+            <label for="id_password">Password:</label><br>
+            {{ form.password }}
+        </p>
+        <button type="submit" class="btn">Log In</button>
+    </form>
+    
+    <p style="margin-top: 15px;">
+        Don't have an account? <a href="{% url 'signup' %}">Sign up here</a>
+    </p>
+</div>
+{% endblock %}

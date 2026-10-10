@@ -1,0 +1,347 @@
+{% extends 'feed/base.html' %}
+
+{% block content %}
+<div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+    <!-- Main Feed Column -->
+    <div class="md:col-span-2 space-y-6">
+        <!-- Post Creation Card -->
+        <!-- Post Creation Card -->
+        <div class="bg-white dark:bg-stone-800 p-5 sm:p-6 rounded-2xl
+            border border-stone-200 dark:border-stone-700
+            shadow-sm space-y-4">
+
+            <!-- Composer Header -->
+            <div class="flex items-center gap-3">
+                <div>
+                    <h2 class="text-xl font-bold text-[#005a36]
+                       dark:text-emerald-400">
+                        Create a post
+                    </h2>
+                    <p class="text-sm text-stone-500 dark:text-stone-400">
+                        Share something with your community.
+                    </p>
+                </div>
+            </div>
+
+            <form method="post" enctype="multipart/form-data" id="post-form" class="space-y-4">
+                {% csrf_token %}
+
+                <!-- Post Content -->
+                <div>
+                    <label for="post-content" class="sr-only">
+                        What's happening?
+                    </label>
+
+                    <textarea id="post-content" name="content" rows="3" maxlength="1000"
+                        placeholder="What's happening? Share your thoughts..." class="w-full min-h-28 max-h-72 bg-[#f9f9f6]
+                       dark:bg-stone-700
+                       border border-stone-200 dark:border-stone-600
+                       p-4 rounded-xl text-base sm:text-lg
+                       focus:outline-none focus:ring-2
+                       focus:ring-[#005a36] focus:border-transparent
+                       placeholder:text-stone-400 resize-y
+                       transition-colors"></textarea>
+
+                    <div class="flex justify-between items-center mt-2 gap-3">
+                        <p class="text-xs text-stone-400">
+                            Be kind. Keep it real.
+                        </p>
+
+                        <span id="char-count" aria-live="polite" class="text-xs text-stone-400 tabular-nums">
+                            0 / 1000
+                        </span>
+                    </div>
+                </div>
+
+                <!-- Image Preview -->
+                <div id="image-preview-container" class="hidden">
+                    <div class="relative inline-block w-full">
+                        <img id="image-preview" src="" alt="Selected image preview" class="w-full max-h-80 object-contain bg-stone-100
+                            dark:bg-stone-900 rounded-xl
+                            border border-stone-200 dark:border-stone-700">
+
+                        <button type="button" id="remove-image" aria-label="Remove selected image" class="absolute top-3 right-3 w-9 h-9 rounded-full
+                               bg-stone-900/80 text-white
+                               hover:bg-rose-600 transition
+                               flex items-center justify-center
+                               text-xl shadow-lg">
+                            &times;
+                        </button>
+                    </div>
+
+                    <p id="image-name" class="text-xs text-stone-500 mt-2 truncate"></p>
+                </div>
+
+                <!-- Composer Actions -->
+                <div class="flex flex-wrap items-center justify-between gap-3
+                    pt-3 border-t border-stone-100
+                    dark:border-stone-700">
+
+                    <label for="post-image" class="cursor-pointer inline-flex items-center gap-2
+                          text-sm font-semibold
+                          bg-stone-100 dark:bg-stone-700
+                          hover:bg-stone-200 dark:hover:bg-stone-600
+                          text-stone-700 dark:text-stone-200
+                          px-4 py-2.5 rounded-xl
+                          border border-stone-200 dark:border-stone-600
+                          transition-colors
+                          focus-within:ring-2 focus-within:ring-[#005a36]">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16
+                             m-2-2l1.586-1.586a2 2 0 012.828 0L20 14
+                             m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0
+                             00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                        </svg>
+                        <span id="image-label">Add image</span>
+
+                        <input type="file" id="post-image" name="image" accept="image/*" class="sr-only">
+                    </label>
+
+                    <button type="submit" id="post-button" disabled class="inline-flex items-center justify-center gap-2
+                           bg-[#005a36] text-white
+                           px-6 py-2.5 rounded-xl font-bold
+                           border-b-4 border-[#003822]
+                           hover:bg-[#007044]
+                           active:border-b-0 active:translate-y-1
+                           transition-all
+                           disabled:opacity-40 disabled:cursor-not-allowed
+                           disabled:hover:bg-[#005a36]
+                           disabled:active:translate-y-0
+                           disabled:active:border-b-4">
+                        <span id="post-button-text">Post</span>
+
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M5 12h14m-7-7l7 7-7 7" />
+                        </svg>
+                    </button>
+                </div>
+            </form>
+        </div>
+
+        <script>
+            (() => {
+                const form = document.getElementById("post-form");
+                const content = document.getElementById("post-content");
+                const counter = document.getElementById("char-count");
+                const imageInput = document.getElementById("post-image");
+                const imageContainer =
+                    document.getElementById("image-preview-container");
+                const imagePreview = document.getElementById("image-preview");
+                const imageName = document.getElementById("image-name");
+                const imageLabel = document.getElementById("image-label");
+                const removeImage = document.getElementById("remove-image");
+                const submitButton = document.getElementById("post-button");
+                const buttonText = document.getElementById("post-button-text");
+
+                if (!form || !content || !imageInput) return;
+
+                let previewUrl = null;
+                let submitting = false;
+
+                function updateComposer() {
+                    const length = content.value.length;
+                    const hasText = content.value.trim().length > 0;
+                    const hasImage = imageInput.files.length > 0;
+
+                    counter.textContent = `${length} / 1000`;
+                    counter.classList.toggle("text-rose-500", length >= 950);
+                    counter.classList.toggle("text-stone-400", length < 950);
+
+                    submitButton.disabled =
+                        submitting || (!hasText && !hasImage);
+
+                    if (length >= 1000) {
+                        counter.setAttribute("aria-label",
+                            "Character limit reached");
+                    } else {
+                        counter.removeAttribute("aria-label");
+                    }
+                }
+
+                function clearPreview() {
+                    if (previewUrl) {
+                        URL.revokeObjectURL(previewUrl);
+                        previewUrl = null;
+                    }
+
+                    imageInput.value = "";
+                    imagePreview.removeAttribute("src");
+                    imageContainer.classList.add("hidden");
+                    imageLabel.textContent = "Add image";
+                    updateComposer();
+                }
+
+                content.addEventListener("input", updateComposer);
+
+                imageInput.addEventListener("change", () => {
+                    const file = imageInput.files[0];
+
+                    if (!file) {
+                        clearPreview();
+                        return;
+                    }
+
+                    if (!file.type.startsWith("image/")) {
+                        clearPreview();
+                        imageInput.setCustomValidity(
+                            "Please select a valid image file."
+                        );
+                        imageInput.reportValidity();
+                        imageInput.setCustomValidity("");
+                        return;
+                    }
+
+                    if (file.size > 5 * 1024 * 1024) {
+                        clearPreview();
+                        alert("Please choose an image smaller than 5 MB.");
+                        return;
+                    }
+
+                    if (previewUrl) URL.revokeObjectURL(previewUrl);
+
+                    previewUrl = URL.createObjectURL(file);
+                    imagePreview.src = previewUrl;
+                    imageName.textContent =
+                        `${file.name} · ${(file.size / 1024 / 1024).toFixed(2)} MB`;
+
+                    imageContainer.classList.remove("hidden");
+                    imageLabel.textContent = "Change image";
+                    updateComposer();
+                });
+
+                removeImage.addEventListener("click", clearPreview);
+
+                form.addEventListener("submit", (event) => {
+                    if (submitting) {
+                        event.preventDefault();
+                        return;
+                    }
+
+                    if (!content.value.trim() && !imageInput.files.length) {
+                        event.preventDefault();
+                        content.focus();
+                        return;
+                    }
+
+                    submitting = true;
+                    submitButton.disabled = true;
+                    buttonText.textContent = "Posting...";
+                });
+
+                updateComposer();
+            })();
+        </script>
+
+        <!-- Feed List -->
+        <div class="space-y-4">
+            {% for post in posts %}
+            <div
+                class="bg-white dark:bg-stone-800 p-5 rounded-2xl border border-stone-200 dark:border-stone-700 shadow-sm space-y-3">
+                <div class="flex items-center justify-between">
+                    <a href="{% url 'profile' username=post.user.username %}"
+                        class="font-bold text-xl hover:underline text-[#005a36] dark:text-emerald-400">
+                        @{{ post.user.username }}
+                    </a>
+                    <span class="text-sm text-stone-400">{{ post.created_at|timesince }} ago</span>
+                </div>
+
+                <p class="text-xl leading-relaxed">{{ post.content }}</p>
+
+                {% if post.image %}
+                <img src="{{ post.image.url }}"
+                    class="rounded-xl w-full max-h-80 object-cover border border-stone-200 dark:border-stone-700">
+                {% endif %}
+
+                <!-- Twitter Vector Action Bar -->
+                <div
+                    class="flex items-center gap-8 text-stone-500 pt-3 border-t border-stone-100 dark:border-stone-700 text-base">
+                    <div class="flex items-center gap-2 hover:text-sky-500 cursor-pointer transition">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z">
+                            </path>
+                        </svg>
+                        <span>{{ post.comments.count }}</span>
+                    </div>
+
+                    <a href="{% url 'like_post' post.id %}"
+                        class="flex items-center gap-2 hover:text-rose-500 transition group">
+                        <svg class="w-5 h-5 group-hover:scale-110 transition {% if user in post.likes.all %}text-rose-500 fill-rose-500{% else %}fill-none stroke-currentColor{% endif %}"
+                            stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z">
+                            </path>
+                        </svg>
+                        <span class="{% if user in post.likes.all %}text-rose-500 font-bold{% endif %}">{{ post.likes.count }}</span>
+                    </a>
+
+                    <button onclick="copyShareLink('{{ request.build_absolute_uri }}')"
+                        class="flex items-center gap-2 hover:text-[#005a36] transition">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z">
+                            </path>
+                        </svg>
+                    </button>
+                </div>
+
+                <!-- Comment Input -->
+                <form action="{% url 'add_comment' post.id %}" method="post" class="flex gap-2 pt-2">
+                    {% csrf_token %}
+                    <input type="text" name="content" placeholder="Write a comment..."
+                        class="flex-1 bg-[#f0f0eb] dark:bg-stone-700 border border-stone-200 dark:border-stone-600 px-3 py-1 rounded-xl text-base focus:outline-none focus:ring-1 focus:ring-[#005a36]">
+                    <button type="submit"
+                        class="bg-stone-200 dark:bg-stone-700 px-4 py-1 rounded-xl text-base border-b-2 border-stone-300 dark:border-stone-900 active:border-b-0 active:translate-y-0.5">Reply</button>
+                </form>
+
+                <!-- Comments List -->
+                {% if post.comments.all %}
+                <div
+                    class="bg-[#f9f9f6] dark:bg-stone-900/50 p-3 rounded-xl space-y-2 mt-2 border border-stone-200 dark:border-stone-700">
+                    {% for comment in post.comments.all|slice:":3" %}
+                    <div class="text-base">
+                        <a href="{% url 'profile' username=comment.user.username %}"
+                            class="font-bold hover:underline">@{{ comment.user.username }}:</a>
+                        <span class="text-stone-700 dark:text-stone-300">{{ comment.content }}</span>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% endif %}
+            </div>
+            {% empty %}
+            <div
+                class="bg-white dark:bg-stone-800 p-8 rounded-2xl text-center text-stone-400 border border-stone-200 dark:border-stone-700">
+                No posts yet. Be the first to publish!
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <!-- Right Sidebar -->
+    <div class="space-y-6 hidden md:block">
+        <div
+            class="bg-white dark:bg-stone-800 p-5 rounded-2xl border border-stone-200 dark:border-stone-700 shadow-sm space-y-4 sticky top-20">
+            <h3
+                class="text-xl font-bold text-[#005a36] dark:text-emerald-400 border-b border-stone-200 dark:border-stone-700 pb-2">
+                Suggested Accounts
+            </h3>
+            <div class="space-y-3">
+                {% for sug in suggested_users %}
+                <div class="flex items-center justify-between">
+                    <a href="{% url 'profile' username=sug.username %}" class="font-bold hover:underline text-lg">
+                        @{{ sug.username }}
+                    </a>
+                    <a href="{% url 'profile' username=sug.username %}"
+                        class="text-sm bg-stone-100 dark:bg-stone-700 px-3 py-1 rounded-xl border border-stone-200 dark:border-stone-600 border-b-2 border-stone-300 dark:border-stone-900 active:border-b-0 active:translate-y-0.5 transition">
+                        View
+                    </a>
+                </div>
+                {% empty %}
+                <p class="text-sm text-stone-400">No new user suggestions right now.</p>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
