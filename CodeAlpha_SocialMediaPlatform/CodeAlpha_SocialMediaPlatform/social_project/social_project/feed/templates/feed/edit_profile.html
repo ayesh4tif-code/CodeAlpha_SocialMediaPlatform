@@ -1,0 +1,135 @@
+{% extends "feed/base.html" %}
+
+{% block content %}
+<div class="max-w-xl mx-auto bg-white dark:bg-stone-800 p-8 rounded-2xl border border-stone-200 dark:border-stone-700 shadow-sm space-y-6">
+
+    <div class="border-b border-stone-200 dark:border-stone-700 pb-4">
+        <h2 class="font-pixel text-4xl text-[#005a36] dark:text-emerald-400 font-bold">
+            Edit Profile
+        </h2>
+        <p class="text-sm text-stone-500 dark:text-stone-400 font-sans">
+            Customize how your account appears across PIXO.
+        </p>
+    </div>
+
+    <form method="post"
+          action="{% url 'edit_profile' user.username %}"
+          enctype="multipart/form-data"
+          class="space-y-6 font-sans">
+
+        {% csrf_token %}
+
+        <!-- Clean Custom Avatar Upload -->
+        <div class="flex items-center gap-5 p-4 bg-[#f9f9f6] dark:bg-stone-700/50 rounded-2xl border border-stone-200 dark:border-stone-600">
+            <div class="relative shrink-0">
+                {% if profile.avatar %}
+                    <img id="avatar-preview"
+                         src="{{ profile.avatar.url }}"
+                         alt="Profile picture"
+                         class="w-20 h-20 rounded-2xl object-cover border-2 border-[#005a36] dark:border-emerald-400 shadow-sm">
+                {% else %}
+                    <div id="avatar-placeholder" class="w-20 h-20 rounded-2xl border-2 border-[#005a36] bg-[#005a36] text-white flex items-center justify-center text-3xl font-bold font-pixel">
+                        {{ user.username|slice:":1"|upper }}
+                    </div>
+                {% endif %}
+            </div>
+
+            <div class="space-y-2">
+                <label class="block text-sm font-bold text-stone-700 dark:text-stone-300">
+                    Profile Picture
+                </label>
+                
+                <div class="flex items-center gap-3">
+                    <label for="custom-avatar-input"
+                           class="cursor-pointer inline-flex items-center gap-2 px-4 py-2 bg-white dark:bg-stone-800 border border-stone-300 dark:border-stone-600 hover:bg-stone-50 dark:hover:bg-stone-700 text-stone-700 dark:text-stone-200 text-xs font-bold rounded-xl transition shadow-sm">
+                        <svg class="w-4 h-4 text-[#005a36] dark:text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                        </svg>
+                        Choose Photo
+                    </label>
+                    <span id="file-name" class="text-xs text-stone-400 font-sans truncate max-w-[180px]">PNG or JPG</span>
+                </div>
+
+                <!-- Hidden Native File Input -->
+                <input type="file"
+                       name="avatar"
+                       id="custom-avatar-input"
+                       accept="image/png,image/jpeg"
+                       class="hidden">
+            </div>
+        </div>
+
+        <!-- Username & Email Inputs -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+                <label for="id_username" class="block text-xs font-bold text-stone-700 dark:text-stone-300 uppercase tracking-wider mb-1.5">
+                    Username
+                </label>
+                <input type="text"
+                       name="username"
+                       id="id_username"
+                       value="{{ u_form.username.value|default:'' }}"
+                       required
+                       class="w-full bg-[#f9f9f6] dark:bg-stone-700 border border-stone-200 dark:border-stone-600 px-3.5 py-2.5 rounded-xl text-stone-800 dark:text-stone-100 focus:outline-none focus:ring-2 focus:ring-[#005a36] text-sm">
+            </div>
+
+            <div>
+                <label for="id_email" class="block text-xs font-bold text-stone-700 dark:text-stone-300 uppercase tracking-wider mb-1.5">
+                    Email Address
+                </label>
+                <input type="email"
+                       name="email"
+                       id="id_email"
+                       value="{{ u_form.email.value|default:'' }}"
+                       required
+                       class="w-full bg-[#f9f9f6] dark:bg-stone-700 border border-stone-200 dark:border-stone-600 px-3.5 py-2.5 rounded-xl text-stone-800 dark:text-stone-100 focus:outline-none focus:ring-2 focus:ring-[#005a36] text-sm">
+            </div>
+        </div>
+
+        <!-- Bio Input -->
+        <div>
+            <label for="id_bio" class="block text-xs font-bold text-stone-700 dark:text-stone-300 uppercase tracking-wider mb-1.5">
+                Bio
+            </label>
+            <textarea name="bio"
+                      id="id_bio"
+                      rows="3"
+                      class="w-full bg-[#f9f9f6] dark:bg-stone-700 border border-stone-200 dark:border-stone-600 p-3.5 rounded-xl text-stone-800 dark:text-stone-100 focus:outline-none focus:ring-2 focus:ring-[#005a36] text-sm placeholder:text-stone-400"
+                      placeholder="Tell us about yourself...">{{ profile.bio|default_if_none:"" }}</textarea>
+        </div>
+
+        <!-- Action Buttons -->
+        <div class="flex items-center justify-end gap-3 pt-4 border-t border-stone-200 dark:border-stone-700">
+            <a href="{% url 'profile' user.username %}"
+               class="px-5 py-2 text-sm font-semibold text-stone-500 hover:text-stone-800 dark:hover:text-stone-200 transition">
+                Cancel
+            </a>
+
+            <button type="submit"
+                    class="bg-[#005a36] text-white px-6 py-2.5 rounded-xl font-bold font-pixel text-xl border-b-4 border-[#003822] hover:bg-[#007044] active:border-b-0 active:translate-y-0.5 transition-all">
+                Save Changes
+            </button>
+        </div>
+    </form>
+</div>
+
+<script>
+    const avatarInput = document.getElementById('custom-avatar-input');
+    const fileNameSpan = document.getElementById('file-name');
+    const avatarPreview = document.getElementById('avatar-preview');
+
+    if (avatarInput) {
+        avatarInput.addEventListener('change', function() {
+            const file = this.files[0];
+            if (file) {
+                fileNameSpan.textContent = file.name;
+                if (avatarPreview) {
+                    avatarPreview.src = URL.createObjectURL(file);
+                }
+            } else {
+                fileNameSpan.textContent = 'PNG or JPG';
+            }
+        });
+    }
+</script>
+{% endblock %}
